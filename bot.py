@@ -1,9 +1,11 @@
 import logging
 import asyncio
 import io
-from telegram import Update
+from telegram import Update, InputFile
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from yandex_speechkit import YandexSpeechKit
+from event_extractor import EventExtractor
+from calendar_creator import CalendarCreator
 from config import TELEGRAM_BOT_TOKEN
 
 # Настройка логирования
@@ -18,6 +20,8 @@ class VoiceToTextBot:
     
     def __init__(self):
         self.speechkit = YandexSpeechKit()
+        self.event_extractor = EventExtractor()
+        self.calendar_creator = CalendarCreator()
         self.application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
         self._setup_handlers()
     
@@ -26,6 +30,7 @@ class VoiceToTextBot:
         # Команды
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("help", self.help_command))
+        self.application.add_handler(CommandHandler("example", self.example_command))
         
         # Обработчики сообщений
         self.application.add_handler(MessageHandler(filters.VOICE, self.handle_voice))
@@ -35,10 +40,15 @@ class VoiceToTextBot:
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработчик команды /start"""
         welcome_message = (
-            "🎤 Привет! Я бот для преобразования голосовых сообщений в текст.\n\n"
-            "📝 Просто отправьте мне голосовое сообщение, и я переведу его в текст "
-            "с помощью Yandex SpeechKit!\n\n"
-            "ℹ️ Используйте /help для получения дополнительной информации."
+            "🎤 Привет! Я умный голосовой календарь-бот!\n\n"
+            "🔊 **Что я умею:**\n"
+            "• Преобразую голосовые сообщения в текст\n"
+            "• Извлекаю события из текста (дату, время, описание)\n"
+            "• Создаю .ics файлы для добавления в календарь\n\n"
+            "📝 Просто отправьте голосовое сообщение типа:\n"
+            "\"Во вторник в 17:00 встреча с другом\"\n\n"
+            "ℹ️ Используйте /help для подробной справки\n"
+            "💡 Используйте /example для примеров фраз"
         )
         await update.message.reply_text(welcome_message)
     
@@ -46,18 +56,53 @@ class VoiceToTextBot:
         """Обработчик команды /help"""
         help_message = (
             "🔧 **Как пользоваться ботом:**\n\n"
-            "1️⃣ Отправьте голосовое сообщение\n"
-            "2️⃣ Дождитесь обработки\n"
-            "3️⃣ Получите текстовую расшифровку\n\n"
+            "1️⃣ Отправьте голосовое сообщение с описанием события\n"
+            "2️⃣ Бот распознает речь и извлечет информацию о событии\n"
+            "3️⃣ Получите .ics файл для добавления в календарь\n\n"
             "📋 **Поддерживаемые форматы:**\n"
             "• Голосовые сообщения Telegram\n"
-            "• Аудиофайлы\n\n"
-            "🌍 **Язык распознавания:** Русский\n\n"
+            "• Аудиофайлы\n"
+            "• Текстовые сообщения\n\n"
+            "🕐 **Поддерживаемые временные форматы:**\n"
+            "• \"в 17:00\", \"в 17 часов\"\n"
+            "• \"во вторник\", \"в пятницу\"\n"
+            "• \"25.12.2024\", \"15 января\"\n\n"
+            "📝 **Типы событий:**\n"
+            "• Встречи, собрания, звонки\n"
+            "• Презентации, лекции, семинары\n"
+            "• Дедлайны, экзамены\n"
+            "• Дни рождения, праздники\n\n"
+            "🌍 **Язык:** Русский\n\n"
             "❓ **Команды:**\n"
-            "/start - Начать работу с ботом\n"
-            "/help - Показать эту справку"
+            "/start - Начать работу\n"
+            "/help - Показать справку\n"
+            "/example - Примеры фраз"
         )
         await update.message.reply_text(help_message, parse_mode='Markdown')
+    
+    async def example_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик команды /example"""
+        example_message = (
+            "💡 **Примеры фраз для голосовых сообщений:**\n\n"
+            "🕐 **С указанием времени:**\n"
+            "• \"Во вторник в 17:00 встреча с другом\"\n"
+            "• \"В пятницу в 14 часов презентация проекта\"\n"
+            "• \"Завтра в 9:30 звонок с клиентом\"\n\n"
+            "📅 **С указанием даты:**\n"
+            "• \"25 декабря день рождения мамы\"\n"
+            "• \"15.01.2025 сдача отчета\"\n"
+            "• \"В следующий понедельник собрание команды\"\n\n"
+            "📝 **Простые события:**\n"
+            "• \"Встреча с врачом\"\n"
+            "• \"Экзамен по математике\"\n"
+            "• \"Конференция по IT\"\n\n"
+            "🎯 **Совет:** Говорите четко и включайте:\n"
+            "• Тип события (встреча, звонок, экзамен)\n"
+            "• Время (если известно)\n"
+            "• День/дату (если известна)\n"
+            "• Краткое описание"
+        )
+        await update.message.reply_text(example_message, parse_mode='Markdown')
     
     async def handle_voice(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработчик голосовых сообщений"""
@@ -75,12 +120,43 @@ class VoiceToTextBot:
             recognized_text = await self.speechkit.recognize_audio(bytes(audio_data))
             
             if recognized_text:
-                # Удаляем сообщение о обработке
-                await processing_message.delete()
+                # Обновляем сообщение о обработке
+                await processing_message.edit_text("🔍 Анализирую текст и извлекаю событие...")
                 
-                # Отправляем результат
-                result_message = f"📝 **Распознанный текст:**\n\n{recognized_text}"
-                await update.message.reply_text(result_message, parse_mode='Markdown')
+                # Пытаемся извлечь событие из текста
+                event_info = self.event_extractor.extract_event(recognized_text)
+                
+                if event_info:
+                    # Создаем .ics файл
+                    ics_content = self.calendar_creator.create_ics_file(event_info)
+                    
+                    if ics_content:
+                        # Удаляем сообщение о обработке
+                        await processing_message.delete()
+                        
+                        # Отправляем информацию о событии
+                        event_text = self.calendar_creator.format_event_info(event_info)
+                        await update.message.reply_text(event_text, parse_mode='Markdown')
+                        
+                        # Отправляем .ics файл
+                        filename = self.calendar_creator.create_filename(event_info)
+                        await update.message.reply_document(
+                            document=InputFile(io.BytesIO(ics_content), filename=filename),
+                            caption="📎 Файл календаря готов! Добавьте его в свой календарь."
+                        )
+                        
+                        logger.info(f"Создано событие для пользователя {update.effective_user.id}: {event_info['description']}")
+                    else:
+                        await processing_message.edit_text(
+                            "❌ Не удалось создать файл календаря. Попробуйте позже."
+                        )
+                else:
+                    # Если событие не извлечено, показываем просто распознанный текст
+                    await processing_message.edit_text(
+                        f"📝 **Распознанный текст:**\n\n{recognized_text}\n\n"
+                        "⚠️ Не удалось извлечь информацию о событии. "
+                        "Попробуйте более четко указать время, дату и тип события."
+                    )
                 
                 logger.info(f"Успешно обработано голосовое сообщение от пользователя {update.effective_user.id}")
             else:
@@ -140,10 +216,54 @@ class VoiceToTextBot:
     
     async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработчик текстовых сообщений"""
-        await update.message.reply_text(
-            "📝 Я умею работать только с голосовыми сообщениями и аудиофайлами.\n"
-            "🎤 Отправьте мне голосовое сообщение для преобразования в текст!"
-        )
+        text = update.message.text.strip()
+        
+        # Отправляем сообщение о начале обработки
+        processing_message = await update.message.reply_text("🔍 Анализирую текст и ищу событие...")
+        
+        try:
+            # Пытаемся извлечь событие из текста
+            event_info = self.event_extractor.extract_event(text)
+            
+            if event_info:
+                # Создаем .ics файл
+                ics_content = self.calendar_creator.create_ics_file(event_info)
+                
+                if ics_content:
+                    # Удаляем сообщение о обработке
+                    await processing_message.delete()
+                    
+                    # Отправляем информацию о событии
+                    event_text = self.calendar_creator.format_event_info(event_info)
+                    await update.message.reply_text(event_text, parse_mode='Markdown')
+                    
+                    # Отправляем .ics файл
+                    filename = self.calendar_creator.create_filename(event_info)
+                    await update.message.reply_document(
+                        document=InputFile(io.BytesIO(ics_content), filename=filename),
+                        caption="📎 Файл календаря готов! Добавьте его в свой календарь."
+                    )
+                    
+                    logger.info(f"Создано событие из текста для пользователя {update.effective_user.id}: {event_info['description']}")
+                else:
+                    await processing_message.edit_text(
+                        "❌ Не удалось создать файл календаря. Попробуйте позже."
+                    )
+            else:
+                await processing_message.edit_text(
+                    "⚠️ Не удалось найти информацию о событии в вашем сообщении.\n\n"
+                    "💡 Попробуйте указать:\n"
+                    "• Тип события (встреча, звонок, экзамен)\n"
+                    "• Время (например: \"в 17:00\")\n"
+                    "• День или дату (например: \"во вторник\" или \"25.12\")\n\n"
+                    "🎤 Или отправьте голосовое сообщение для лучшего распознавания!"
+                )
+                
+        except Exception as e:
+            logger.error(f"Ошибка при обработке текстового сообщения: {e}")
+            await processing_message.edit_text(
+                "❌ Произошла ошибка при анализе текста. Попробуйте позже."
+            )
     
     async def run(self):
         """Запуск бота"""
