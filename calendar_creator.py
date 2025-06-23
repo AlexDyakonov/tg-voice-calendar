@@ -42,11 +42,20 @@ class CalendarCreator:
             
             # Время начала события
             start_time = event_info['datetime']
-            event.add('dtstart', start_time)
+            is_all_day = event_info.get('is_all_day', False)
             
-            # Время окончания (по умолчанию +1 час)
-            end_time = start_time + timedelta(hours=1)
-            event.add('dtend', end_time)
+            if is_all_day:
+                # Для события на весь день используем только дату
+                event.add('dtstart', start_time.date())
+                # Событие на весь день длится до следующего дня
+                end_date = start_time.date() + timedelta(days=1)
+                event.add('dtend', end_date)
+            else:
+                # Для события с конкретным временем
+                event.add('dtstart', start_time)
+                # Время окончания (по умолчанию +1 час)
+                end_time = start_time + timedelta(hours=1)
+                event.add('dtend', end_time)
             
             # Описание события
             event.add('summary', vText(event_info['description']))
@@ -87,7 +96,12 @@ class CalendarCreator:
         try:
             # Берем дату и время
             dt = event_info['datetime']
-            date_str = dt.strftime('%Y-%m-%d_%H-%M')
+            is_all_day = event_info.get('is_all_day', False)
+            
+            if is_all_day:
+                date_str = dt.strftime('%Y-%m-%d_all-day')
+            else:
+                date_str = dt.strftime('%Y-%m-%d_%H-%M')
             
             # Очищаем описание для имени файла
             description = event_info['description']
@@ -115,24 +129,35 @@ class CalendarCreator:
         """
         try:
             dt = event_info['datetime']
+            is_all_day = event_info.get('is_all_day', False)
             
             # Форматируем дату и время
             date_str = dt.strftime('%d.%m.%Y')
-            time_str = dt.strftime('%H:%M')
             weekday_names = [
                 'Понедельник', 'Вторник', 'Среда', 'Четверг',
                 'Пятница', 'Суббота', 'Воскресенье'
             ]
             weekday = weekday_names[dt.weekday()]
             
-            info_text = (
-                f"📅 **Событие создано:**\n\n"
-                f"📝 **Описание:** {event_info['description']}\n"
-                f"📆 **Дата:** {weekday}, {date_str}\n"
-                f"🕐 **Время:** {time_str}\n"
-                f"⏱️ **Продолжительность:** 1 час\n\n"
-                f"💬 **Исходный текст:** \"{event_info['original_text']}\""
-            )
+            if is_all_day:
+                info_text = (
+                    f"📅 **Событие создано:**\n\n"
+                    f"📝 **Описание:** {event_info['description']}\n"
+                    f"📆 **Дата:** {weekday}, {date_str}\n"
+                    f"🕐 **Время:** Весь день\n"
+                    f"⏱️ **Тип:** Событие на весь день\n\n"
+                    f"💬 **Исходный текст:** \"{event_info['original_text']}\""
+                )
+            else:
+                time_str = dt.strftime('%H:%M')
+                info_text = (
+                    f"📅 **Событие создано:**\n\n"
+                    f"📝 **Описание:** {event_info['description']}\n"
+                    f"📆 **Дата:** {weekday}, {date_str}\n"
+                    f"🕐 **Время:** {time_str}\n"
+                    f"⏱️ **Продолжительность:** 1 час\n\n"
+                    f"💬 **Исходный текст:** \"{event_info['original_text']}\""
+                )
             
             return info_text
             

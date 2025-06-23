@@ -123,15 +123,17 @@ class EventExtractor:
             else:
                 logger.info(f"Используем найденную дату: {event_date}")
             
-            # Если не найдено время, используем текущее время + 1 час
+            # Если не найдено время, создаем событие на весь день
             if not event_time:
-                event_time = (datetime.now() + timedelta(hours=1)).time()
-                logger.info(f"Время не найдено, используем время по умолчанию: {event_time}")
+                logger.info("Время не найдено, создаем событие на весь день")
+                # Для события на весь день используем полночь
+                event_datetime = datetime.combine(event_date, dt.time(0, 0))
+                is_all_day = True
             else:
                 logger.info(f"Используем найденное время: {event_time}")
-            
-            # Создаем datetime объект
-            event_datetime = datetime.combine(event_date, event_time)
+                # Создаем datetime объект с конкретным временем
+                event_datetime = datetime.combine(event_date, event_time)
+                is_all_day = False
             
             # Если событие в прошлом, переносим на следующий день/неделю
             if event_datetime < datetime.now():
@@ -149,7 +151,8 @@ class EventExtractor:
             event_info = {
                 'datetime': event_datetime,
                 'description': event_description,
-                'original_text': text
+                'original_text': text,
+                'is_all_day': is_all_day
             }
             
             logger.info(f"Извлечено событие: {event_info}")
