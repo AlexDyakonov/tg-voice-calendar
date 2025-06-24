@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Mic, Calendar, CloudDownload } from "lucide-react";
 
@@ -18,8 +17,8 @@ const Features = () => {
     },
     {
       icon: <CloudDownload className="w-8 h-8 text-green-600" />,
-      title: "Работает офлайн",
-      description: "Данные остаются у вас — максимальная приватность",
+      title: "Готовые файлы",
+      description: "Получайте готовые .ics файлы для добавления в календарь",
       emoji: "🔐"
     },
     {

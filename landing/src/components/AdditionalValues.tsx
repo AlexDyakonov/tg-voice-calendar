@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Clock, Mic, Calendar, Shield, Settings } from "lucide-react";
 
@@ -21,8 +20,8 @@ const AdditionalValues = () => {
     },
     {
       icon: <Shield className="w-8 h-8 text-indigo-600" />,
-      title: "Безопасно",
-      description: "Работает офлайн, ваши данные не уходят в облако"
+      title: "Простота использования",
+      description: "Интуитивно понятный интерфейс в привычном Telegram"
     },
     {
       icon: <Settings className="w-8 h-8 text-orange-600" />,

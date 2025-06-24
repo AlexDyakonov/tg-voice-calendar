@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -39,10 +38,6 @@ const CTA = () => {
         <div className="mt-12 text-center">
           <p className="text-gray-500 text-sm mb-4">Безопасно и надёжно</p>
           <div className="flex justify-center items-center space-x-8 text-gray-400">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-sm">Приватность данных</span>
-            </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
               <span className="text-sm">Без регистрации</span>
