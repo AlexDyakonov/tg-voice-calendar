@@ -13,6 +13,10 @@
 - 🌍 Поддержка русского языка
 - ⚡ Быстрая обработка с помощью Yandex SpeechKit
 - 📱 Удобный интерфейс с эмодзи и markdown
+- 👥 **Система регистрации пользователей**
+- 💾 **Сохранение истории запросов и расшифровок**
+- 📊 **Статистика использования для каждого пользователя**
+- 📝 **Просмотр истории последних запросов**
 
 ## 🚀 Установка и настройка
 
@@ -37,7 +41,7 @@ pip install -r requirements.txt
 
 ### 4. Настройка переменных окружения
 
-Создайте файл `.env` в корне проекта:
+Создайте файл `.env` в корне проекта (используйте `env.example` как шаблон):
 ```bash
 # Telegram Bot Token (получите у @BotFather)
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
@@ -47,6 +51,13 @@ YANDEX_API_KEY=your_yandex_api_key_here
 
 # Yandex Cloud Folder ID (ID папки в Yandex Cloud)
 YANDEX_FOLDER_ID=your_yandex_folder_id_here
+
+# Database Configuration (для PostgreSQL)
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=voice_calendar_bot
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
 ```
 
 ### 5. Получение необходимых ключей
@@ -67,8 +78,21 @@ YANDEX_FOLDER_ID=your_yandex_folder_id_here
 
 ## 🏃‍♂️ Запуск
 
+### Локальный запуск
 ```bash
 python bot.py
+```
+
+### Запуск с Docker (рекомендуется)
+```bash
+# Запуск базы данных и бота
+docker-compose up -d
+
+# Остановка
+docker-compose down
+
+# Просмотр логов
+docker-compose logs -f bot
 ```
 
 ## 📖 Использование
@@ -87,6 +111,8 @@ python bot.py
 - `/start` - Начать работу с ботом
 - `/help` - Показать подробную справку
 - `/example` - Примеры фраз для создания событий
+- `/stats` - Показать статистику использования
+- `/history` - Показать историю последних 10 запросов
 
 ## 🏗️ Структура проекта
 
@@ -94,10 +120,14 @@ python bot.py
 tg-voice-calendar/
 ├── bot.py              # Основной файл бота
 ├── config.py           # Конфигурация и переменные окружения
+├── database.py         # Модели и функции для работы с базой данных
 ├── yandex_speechkit.py # Модуль для работы с Yandex SpeechKit API
 ├── event_extractor.py  # Модуль извлечения событий с помощью Natasha
 ├── calendar_creator.py # Модуль создания iCalendar файлов
 ├── requirements.txt    # Зависимости Python
+├── docker-compose.yaml # Конфигурация Docker
+├── Dockerfile          # Образ Docker для бота
+├── env.example         # Пример файла переменных окружения
 ├── .env               # Переменные окружения (создать самостоятельно)
 └── README.md          # Документация
 ```
@@ -113,6 +143,17 @@ tg-voice-calendar/
 - `natasha` - Библиотека для обработки естественного языка
 - `icalendar` - Создание iCalendar файлов
 - `dateparser` - Парсинг дат и времени
+- `sqlalchemy` - ORM для работы с базой данных
+- `asyncpg` - Асинхронный драйвер для PostgreSQL
+- `alembic` - Миграции базы данных
+
+### База данных:
+- **PostgreSQL** - Основная база данных
+- **Таблицы:**
+  - `users` - Информация о пользователях Telegram
+  - `user_requests` - История всех запросов и расшифровок
+- **Автоматическое создание таблиц** при первом запуске
+- **Сохранение статистики** по каждому пользователю
 
 ### Ограничения:
 - Максимальный размер аудиофайла: 1MB

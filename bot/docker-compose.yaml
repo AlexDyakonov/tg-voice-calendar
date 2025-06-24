@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-voice_calendar_bot}
+    volumes:
+      - voice-bot_db:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  adminer:
+    image: adminer:4.8.1
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
+  bot:
+    build: .
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+volumes:
+  voice-bot_db:

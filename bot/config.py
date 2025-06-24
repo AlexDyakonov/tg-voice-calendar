@@ -1,15 +1,26 @@
 import os
+
 from dotenv import load_dotenv
 
 # Загружаем переменные окружения
 load_dotenv()
 
 # Telegram Bot настройки
-TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # Yandex SpeechKit настройки
-YANDEX_API_KEY = os.getenv('YANDEX_API_KEY')
-YANDEX_FOLDER_ID = os.getenv('YANDEX_FOLDER_ID')
+YANDEX_API_KEY = os.getenv("YANDEX_API_KEY")
+YANDEX_FOLDER_ID = os.getenv("YANDEX_FOLDER_ID")
+
+# База данных настройки
+POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "voice_calendar_bot")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+
+# Строка подключения к базе данных
+DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 # Проверяем наличие обязательных переменных
 if not TELEGRAM_BOT_TOKEN:
@@ -19,4 +30,4 @@ if not YANDEX_API_KEY:
     raise ValueError("YANDEX_API_KEY не установлен в переменных окружения")
 
 if not YANDEX_FOLDER_ID:
-    raise ValueError("YANDEX_FOLDER_ID не установлен в переменных окружения") 
+    raise ValueError("YANDEX_FOLDER_ID не установлен в переменных окружения")
